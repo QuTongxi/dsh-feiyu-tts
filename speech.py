@@ -8,6 +8,7 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from time import perf_counter
 
 from aiohttp import web
 import numpy as np
@@ -35,17 +36,24 @@ class Feiyu:
         selection = self.manifest["styles"][style]
         options = self.manifest["inference"]
         checkpoint = self.package / selection["llm_checkpoint"]
-        prompt = options["prompt_prefix"] + selection["reference_text"]
-        reference = str(self.package / selection["reference_audio"])
+        speaker_id = f"dsh-feiyu-{style}"
+        started = perf_counter()
         with torch.inference_mode():
             if checkpoint != self.loaded_checkpoint:
                 self.voice.model.llm.load_state_dict(torch.load(checkpoint, map_location="cpu", weights_only=True), strict=True)
                 self.loaded_checkpoint = checkpoint
             self.voice.model.llm.eval()
             set_all_random_seed(options["seed"])
+            if speaker_id not in self.voice.list_available_spks():
+                prompt = options["prompt_prefix"] + selection["reference_text"]
+                prompt = self.voice.frontend.text_normalize(prompt, split=False, text_frontend=True)
+                reference = str(self.package / selection["reference_audio"])
+                self.voice.add_zero_shot_spk(prompt, reference, speaker_id)
+            conditioned = perf_counter()
             chunks = [part["tts_speech"].detach().cpu().numpy()[0]
-                      for part in self.voice.inference_zero_shot(text, prompt, reference,
+                      for part in self.voice.inference_zero_shot(text, "", "", zero_shot_spk_id=speaker_id,
                                                                 stream=False, speed=options["speed"])]
+        generated = perf_counter()
         audio = np.concatenate(chunks)
         peak = float(np.abs(audio).max())
         if audio.size <= 2400 or not np.isfinite(audio).all() or peak <= 1e-4:
@@ -56,8 +64,9 @@ class Feiyu:
                               "-ar", str(rate), "-ac", "1", "-i", "pipe:0", "-c:a", "libmp3lame",
                               "-b:a", "96k", "-f", "mp3", "pipe:1"], input=audio.tobytes(),
                              stdout=subprocess.PIPE, check=True).stdout
-        logging.info("Feiyu %s: %d characters, %.2f s, %.4f peak, %d MP3 bytes",
-                     style, len(text), len(audio) / rate, peak, len(mp3))
+        logging.info("Feiyu %s: %d characters, %.2f s audio; voice prep %.3f s, synthesis %.3f s, MP3 %.3f s",
+                     style, len(text), len(audio) / rate, conditioned - started,
+                     generated - conditioned, perf_counter() - generated)
         return mp3
 
 
@@ -90,7 +99,7 @@ async def serve(package: Path, port: int):
 
     app = web.Application()
     app.router.add_post("/v1/audio/speech", speech)
-    runner = web.AppRunner(app)
+    runner = web.AppRunner(app, handler_cancellation=True)
     with ThreadPoolExecutor(max_workers=1) as inference:
         await runner.setup()
         try:

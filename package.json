@@ -1,14 +1,16 @@
 {
   "name": "dsh-feiyu-tts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local Feiyu character speech for DeepSeek Harness and DeepSeek-chan.",
   "license": "MIT",
   "type": "module",
   "main": "index.js",
+  "scripts": { "test": "node --test" },
   "files": [
     "index.js",
     "service.js",
     "speech.py",
+    "companion",
     "cordis.patch.yml"
   ],
   "engines": {

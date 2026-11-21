@@ -23,6 +23,22 @@
 - **角色播报**。按桌面角色项目的说明连接它自带的 DSH 桥接。在角色的声音设置中选择「自定义 API」，地址填 `http://127.0.0.1:39182/v1`，模型填 `FeiyuVoice-CosyVoice3`，音色填 `cute` 或 `gentle`，密钥留空。让 DSH「调用 avatar_speak，用开心的表情说一句游戏解说」，角色会播放合成音频并驱动口型。[上游角色与 DSH 接入说明](https://github.com/lcyyun/deepseek-chan-companion/blob/main/docs/dsh-agent-guide.md)
 - **接入 PvZ**。在同一 DSH 配置启用 `dsh-pvz` 和角色桥接后，可以说「用 pvz_get_state 看一眼棋盘，再用 avatar_speak 播报一句」。同一句台词只需调用一次角色播报工具。[DSH PvZ 插件](https://github.com/QuTongxi/dsh-pvz)
 
+### 缩短开口前的等待
+
+升级到 0.2.0 后，每种声线的参考录音只在首次使用时提取特征。开播前可让 DSH「调用 `feiyu_start`，用 `warmup_voice=cute` 静默预热」。预热会加载模型并在本机合成一句短话。切换到温柔声线时可以指定 `gentle`。
+
+长解说还需要一次播放器更新。使用 **DeepSeek-chan v0.24.0 Windows x64 用户版**时，对 DSH 说「调用 `feiyu_configure_playback`，设置 `enabled=true`」，然后完全退出并重新打开大肥鱼桌面角色。便携版放在自选位置时，把包含 `DeepSeek-chan.exe` 的目录作为 `directory` 传入。工具会核对该版本前端资源的 SHA-256，并在本机更新播放代码。需要还原时设置 `enabled=false`，再重新打开角色。
+
+此后只需调用一次 `avatar_speak`。角色先播放第一句，同时准备下一句，口型和进度跟随实际音频。停止或替换播报时会取消后续播放。肥鱼语音跳过思考后的固定开场等待。没有合适停顿的短句继续一次播放，`feiyu_synthesize` 仍可导出完整 MP3。
+
+在 Linux、RTX 5060 Ti 16 GB、PyTorch 2.11.0+cu128 上，用相同的“可爱”声线在 Chromium 中对比了 v0.24.0 发行包的播放器。下表从播放器收到完整文字开始计时，到第一段解码音频调用 Web Audio 的 `start()` 为止。两版都已预热，短句取三次中位数，长段各测一次。LLM 写台词和扬声器硬件的延迟在计时范围之外。
+
+| 台词 | v0.1.0 + 原版播放器 | v0.2.0 + 分句播放器 |
+| --- | ---: | ---: |
+| 第三路马上就要守不住啦！ | 0.89 秒 | 0.84 秒 |
+| 第三路来僵尸了，快种豌豆射手！ | 1.11 秒 | 0.67 秒 |
+| 79 字、四句话的战况解说 | 4.06 秒 | 0.66 秒 |
+
 本地接口为 `POST /v1/audio/speech`，请求示例如下。响应是 MP3 音频。端口可通过插件配置 `port` 修改，角色的 API 地址需同步更新。同一端口由一个 DSH 配置使用。
 
 ```json
