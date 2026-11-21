@@ -15,6 +15,18 @@
       },
       "versions": [
         {
+          "version": "0.2.0",
+          "publishTimestamp": 1795261776,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/QuTongxi/dsh-feiyu-tts",
+            "commit": "5b63af7c09b8540ba3f8b2d87da92c4a9bfa94e7"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.3 <0.3.0"
+          }
+        },
+        {
           "version": "0.1.0",
           "publishTimestamp": 1795258278,
           "source": {
