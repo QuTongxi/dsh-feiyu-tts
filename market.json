@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "title": "DSH 大肥鱼语音",
+  "plugins": [
+    {
+      "name": "dsh-feiyu-tts",
+      "title": "大肥鱼语音",
+      "description": {
+        "zh": "本地合成大肥鱼的可爱和温柔声线，支持 DeepSeek-chan 游戏解说。",
+        "en": "Local Feiyu character speech for DeepSeek Harness and DeepSeek-chan."
+      },
+      "author": "QuTongxi",
+      "repository": {
+        "url": "https://github.com/QuTongxi/dsh-feiyu-tts"
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1795258278,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/QuTongxi/dsh-feiyu-tts",
+            "commit": "fbff598e13fb0bc16ab472d0a0fbb5994810cb39"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.3 <0.3.0"
+          }
+        }
+      ]
+    }
+  ]
+}
